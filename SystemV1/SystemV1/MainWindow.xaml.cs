@@ -14,7 +14,8 @@ using System.Windows.Shapes;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
-using Emgu.Util; 
+using Emgu.Util;
+using System.Drawing;
 
 
 namespace SystemV1
@@ -27,9 +28,10 @@ namespace SystemV1
     {
         //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         
-        //:::::Declare Class::::::::::::::::::::::::::;:::::
+        //:::::Declare Class::::::::::::::::::::::::::::::::
         public GetKinectData GettingKinectData;
-        public HandDetector HandDetection; 
+        public HandDetector HandDetection;
+        public HandSegmentation GettingSegmentation;
         
         //:::::Variables::::::::::::::::::::::::::::::::::::
         private int FrameWidth = 640;
@@ -48,6 +50,7 @@ namespace SystemV1
             InitializeComponent();
             GettingKinectData = new GetKinectData();
             HandDetection = new HandDetector();
+            GettingSegmentation = new HandSegmentation(); 
         } 
         //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -67,9 +70,14 @@ namespace SystemV1
         private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
             List<Object> returnHandDetectorK1 = new List<object>(2);
-            List<Object> returnHandDetectorK2 = new List<object>(2); 
+            List<Object> returnHandDetectorK2 = new List<object>(2);
+            System.Drawing.Rectangle RoiKinect1;
+            System.Drawing.Rectangle RoiKinect2;
             Image<Gray, Byte> imagenKinectGray1;
             Image<Gray, Byte> imagenKinectGray2;
+            Image<Gray, Byte> imageRoi1;
+            Image<Gray, Byte> imageRoi2; 
+
 
             imagenKinectGray1 = GettingKinectData.PollDepth(0); 
             imagenKinectGray2 = GettingKinectData.PollDepth(1);
@@ -77,11 +85,31 @@ namespace SystemV1
             returnHandDetectorK1 = HandDetection.Detection(imagenKinectGray1);
             returnHandDetectorK2 = HandDetection.Detection(imagenKinectGray2);
 
-            imagenKinectGray1 = (Image<Gray,Byte>)returnHandDetectorK1[1];
-            imagenKinectGray2 = (Image<Gray, Byte>)returnHandDetectorK2[1];
+            //cast the return
+            //imagenKinectGray1 = (Image<Gray,Byte>)returnHandDetectorK1[1];
+            //imagenKinectGray2 = (Image<Gray, Byte>)returnHandDetectorK2[1];
+            RoiKinect1 = (System.Drawing.Rectangle)returnHandDetectorK1[0];
+            RoiKinect2 = (System.Drawing.Rectangle)returnHandDetectorK2[0]; 
 
-            DepthImageK1.Source = imagetoWriteablebitmap(imagenKinectGray1);
-            DepthImageK2.Source = imagetoWriteablebitmap(imagenKinectGray2);
+
+            if (RoiKinect1 != System.Drawing.Rectangle.Empty || RoiKinect2 != System.Drawing.Rectangle.Empty)
+            {
+                GettingSegmentation = new HandSegmentation();
+                //try
+                //{
+                imageRoi1 = GettingSegmentation.HandConvexHull(imagenKinectGray1, RoiKinect1);
+
+                // }
+                //catch (Exception pie)
+                //{
+                //}
+
+                //imageRoi2 = GettingSegmentation.HandConvexHull(imagenKinectGray2, RoiKinect2);
+
+                DepthImageK1.Source = imagetoWriteablebitmap(imagenKinectGray1);
+                DepthImageK2.Source = imagetoWriteablebitmap(imagenKinectGray2); 
+            } 
+
         }
         //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
