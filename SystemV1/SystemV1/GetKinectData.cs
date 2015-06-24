@@ -124,7 +124,7 @@ namespace SystemV1
             }
 
             depthFrameKinect = depthFrameKinectBGR.Convert<Gray, Byte>();
-            depthFrameKinect = removeNoise(depthFrameKinect, 3);
+            depthFrameKinect = removeNoise(depthFrameKinect, 11);
 
             return depthFrameKinect;
         }//fin PollDepth() 

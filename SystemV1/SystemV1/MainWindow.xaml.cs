@@ -75,8 +75,8 @@ namespace SystemV1
             System.Drawing.Rectangle RoiKinect2;
             Image<Gray, Byte> imagenKinectGray1;
             Image<Gray, Byte> imagenKinectGray2;
-            Image<Gray, Byte> imageRoi1;
-            Image<Gray, Byte> imageRoi2; 
+            Image<Gray, Byte> imageRoi1 = new Image<Gray,Byte>(200,200);
+            Image<Gray, Byte> imageRoi2 = new Image<Gray, Byte>(200, 200);
 
 
             imagenKinectGray1 = GettingKinectData.PollDepth(0); 
@@ -92,11 +92,11 @@ namespace SystemV1
             RoiKinect2 = (System.Drawing.Rectangle)returnHandDetectorK2[0]; 
 
 
-            if (RoiKinect1 != System.Drawing.Rectangle.Empty || RoiKinect2 != System.Drawing.Rectangle.Empty)
+            if (RoiKinect1 != System.Drawing.Rectangle.Empty)//&& RoiKinect2 != System.Drawing.Rectangle.Empty)
             {
                 GettingSegmentation = new HandSegmentation();
                 //try
-                //{
+                //{ 
                 imageRoi1 = GettingSegmentation.HandConvexHull(imagenKinectGray1, RoiKinect1);
 
                 // }

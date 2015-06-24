@@ -13,29 +13,17 @@ namespace SystemV1
     {
         //:::::::::::::::::Variables::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         private Seq<System.Drawing.Point> Hull;
-        private MCvBox2D box; 
+        private Seq<MCvConvexityDefect> defects;
+        private MCvConvexityDefect[] defectsArray; 
+        private MCvBox2D box;
+        private PointF[] points;
+                    
+        public int numero;
         //:::::::::::::::::fin variables::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
-        //:::::::::::::Methods for make the image binary::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        //esta binarizacion usa el histograma para ontener el valor mas grande
-        private Image<Gray, Byte> binaryThreshold(Image<Gray, Byte> handImage)
-        {
-            float maxValue;
-            float minValue;
-            int[] maxPos;
-            int[] minPos;
-
-            DenseHistogram histograma = new DenseHistogram(255, new RangeF(1, 255));
-
-            histograma.Calculate(new Image<Gray, Byte>[] { handImage }, true, null);
-            histograma.MinMax(out minValue, out maxValue, out minPos, out maxPos);
-
-            handImage = handImage.ThresholdBinary(new Gray(maxPos[0] - 20), new Gray(255));
-
-            return handImage;
-        }//end binaryThreshold 
-
+        //:::::::::::::Method for make the image binary::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        //the binarization is inspired in NiBlanck banarization, but in this case, we use just the average of the image
 
         private Image<Gray, Byte> binaryThresholdNiBlack(Image<Gray, Byte> handImage)
         {
@@ -48,27 +36,23 @@ namespace SystemV1
             return handImage;
         }
         
-
         //::::::::::::Method to calculate the convex hull:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         public Image<Gray, Byte> HandConvexHull(Image<Gray, Byte> frame, Rectangle Roi)
         {
             Image<Gray, Byte> BinaryImage;
 
-            frame.ROI = Roi;
-            BinaryImage = frame; 
-            //BinaryImage = binaryThresholdNiBlack(frame);
+            BinaryImage = frame.Copy(Roi); 
+            BinaryImage = binaryThresholdNiBlack(frame);
 
-            /*
+
             using (MemStorage storage = new MemStorage())
             {
-                box = new MCvBox2D();
-
-                Contour<System.Drawing.Point> contours = BinaryImage.FindContours(Emgu.CV.CvEnum.CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE, Emgu.CV.CvEnum.RETR_TYPE.CV_RETR_LIST, storage);
-                Contour<System.Drawing.Point> biggestContour = null;
-
                 Double result1 = 0;
                 Double result2 = 0;
+                
+                Contour<System.Drawing.Point> contours = BinaryImage.FindContours(Emgu.CV.CvEnum.CHAIN_APPROX_METHOD.CV_CHAIN_APPROX_SIMPLE, Emgu.CV.CvEnum.RETR_TYPE.CV_RETR_LIST, storage);
+                Contour<System.Drawing.Point> biggestContour = null;
 
                 while (contours != null)
                 {
@@ -84,14 +68,20 @@ namespace SystemV1
                 if (biggestContour != null)
                 {
                     Contour<System.Drawing.Point> concurrentContour = biggestContour.ApproxPoly(biggestContour.Perimeter * 0.0025, storage);
-                    biggestContour = concurrentContour;
+                    biggestContour = concurrentContour; 
+
                     Hull = biggestContour.GetConvexHull(Emgu.CV.CvEnum.ORIENTATION.CV_COUNTER_CLOCKWISE);
+                    defects = biggestContour.GetConvexityDefacts(storage, Emgu.CV.CvEnum.ORIENTATION.CV_COUNTER_CLOCKWISE);
+                    defectsArray = defects.ToArray(); 
+
+                    box = biggestContour.GetMinAreaRect();
+                    points = box.GetVertices();
                 }
 
-                //handSegmentation.Draw(biggestContour, new Gray(155), 3);
-                //BinaryImage.Draw(Hull, new Gray(155), 3);*/
+                BinaryImage.Draw(Hull, new Gray(155), 3);
+            }
 
-                return BinaryImage;
+            return BinaryImage;
         }//end HandConvexHull
 
     }//end class
