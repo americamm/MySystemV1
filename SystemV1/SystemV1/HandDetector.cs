@@ -23,12 +23,12 @@ namespace SystemV1
         public List<Object> Detection(Image<Gray, Byte> frame)
         {   
             List<Object> listReturn = new List<object>(2);
-            haar = new CascadeClassifier(@"C:\Users\America\Documents\NewHandClassifier\OpenPalm100pos\classifier\cascade.xml");
+            haar = new CascadeClassifier(@"C:\Users\America\Documents\MySystemV1\classifier\cascade.xml");
             
 
             if (frame != null)
             {
-                System.Drawing.Rectangle[] hands = haar.DetectMultiScale(frame, 1.1, 2, new System.Drawing.Size(frame.Width / 8, frame.Height / 8), new System.Drawing.Size(frame.Width / 3, frame.Height / 3));
+                System.Drawing.Rectangle[] hands = haar.DetectMultiScale(frame, 1.1, 4, new System.Drawing.Size(frame.Width / 8, frame.Height / 8), new System.Drawing.Size(frame.Width / 3, frame.Height / 3));
 
                 foreach (System.Drawing.Rectangle roi in hands)
                 {
@@ -37,12 +37,14 @@ namespace SystemV1
                 }
 
                 if (hands.Count() == 0)
-                {
-                    listReturn.Add(Rectangle.Empty); 
+                { 
+                    Rectangle[] noDetection= new Rectangle[]{}; 
+                    //noDetection[0] = Rectangle.Empty;
+                    listReturn.Add(noDetection); 
                 }
                 else
                 {
-                    listReturn.Add(hands[0]);
+                    listReturn.Add(hands);
                 }
                 
             }

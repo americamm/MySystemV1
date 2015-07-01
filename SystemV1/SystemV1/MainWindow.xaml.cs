@@ -16,6 +16,7 @@ using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.Util;
 using System.Drawing;
+using System.IO; 
 
 
 namespace SystemV1
@@ -39,11 +40,18 @@ namespace SystemV1
 
         private WriteableBitmap ImagenWriteablebitmap;
         private Int32Rect WriteablebitmapRect;
-        private int WriteablebitmapStride;
+        private int WriteablebitmapStride; 
+        
+        //para contar los cuadros por segundo 
+        private int fps = 1;
+        private int sec = 1;  
+        //Escribir el archivito.
+        private StreamWriter file = new StreamWriter(@"C:\MyRecognition\test.txt");
+        private string path = @"C:\MyRecognition\2do\";
+
         //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-
+        
+        
         //::::::Constructor::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         public MainWindow()
         {
@@ -61,6 +69,8 @@ namespace SystemV1
         {
             GettingKinectData.FindKinect();
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
+
+            
         }
         //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -71,12 +81,16 @@ namespace SystemV1
         {
             List<Object> returnHandDetectorK1 = new List<object>(2);
             List<Object> returnHandDetectorK2 = new List<object>(2);
-            System.Drawing.Rectangle RoiKinect1;
-            System.Drawing.Rectangle RoiKinect2;
+            System.Drawing.Rectangle[] RoiKinect1;
+            System.Drawing.Rectangle[] RoiKinect2;
             Image<Gray, Byte> imagenKinectGray1;
             Image<Gray, Byte> imagenKinectGray2;
             Image<Gray, Byte> imageRoi1 = new Image<Gray,Byte>(200,200);
             Image<Gray, Byte> imageRoi2 = new Image<Gray, Byte>(200, 200);
+
+            PointF centerHand; 
+            PointF positionRoi1;  
+            PointF positionCenterHand = new PointF();         
 
 
             imagenKinectGray1 = GettingKinectData.PollDepth(0); 
@@ -88,28 +102,50 @@ namespace SystemV1
             //cast the return
             //imagenKinectGray1 = (Image<Gray,Byte>)returnHandDetectorK1[1];
             //imagenKinectGray2 = (Image<Gray, Byte>)returnHandDetectorK2[1];
-            RoiKinect1 = (System.Drawing.Rectangle)returnHandDetectorK1[0];
-            RoiKinect2 = (System.Drawing.Rectangle)returnHandDetectorK2[0]; 
+            RoiKinect1 = (System.Drawing.Rectangle[])returnHandDetectorK1[0];
+            RoiKinect2 = (System.Drawing.Rectangle[])returnHandDetectorK2[0]; 
 
 
-            if (RoiKinect1 != System.Drawing.Rectangle.Empty)//&& RoiKinect2 != System.Drawing.Rectangle.Empty)
-            {
+            //if (RoiKinect1 != System.Drawing.Rectangle.Empty)//&& RoiKinect2 != System.Drawing.Rectangle.Empty)
+            //{
+                /*Comentado hasta que quede el despliege de los datos
                 GettingSegmentation = new HandSegmentation();
-                //try
-                //{ 
-                imageRoi1 = GettingSegmentation.HandConvexHull(imagenKinectGray1, RoiKinect1);
+        
+                centerHand = GettingSegmentation.HandConvexHull(imagenKinectGray1, RoiKinect1);
 
-                // }
-                //catch (Exception pie)
-                //{
-                //}
+                positionRoi1 = RoiKinect1.Location; 
+                positionCenterHand.X = positionRoi1.X + centerHand.X; 
+                positionCenterHand.Y = positionRoi1.Y + centerHand.Y; 
+
+                CircleF centrillo = new CircleF(positionCenterHand, 5f);
+
+                imagenKinectGray1.Draw(centrillo, new Gray(150), 3); 
+          
 
                 //imageRoi2 = GettingSegmentation.HandConvexHull(imagenKinectGray2, RoiKinect2);
 
-                DepthImageK1.Source = imagetoWriteablebitmap(imagenKinectGray1);
-                DepthImageK2.Source = imagetoWriteablebitmap(imagenKinectGray2); 
+                */
+
+            //This thing is for count the frames where the two hands are detected in every kinect.
+            //Save the images and a txt.
+            
+            
+            if ((RoiKinect1.Length >= 2) && (RoiKinect2.Length >= 2))
+            { 
+                file.WriteLine(fps.ToString()+"_"+sec.ToString()+"\n");
+                imagenKinectGray1.Save(path + "front" + fps.ToString() +"_"+ sec.ToString() + ".png");
+                imagenKinectGray2.Save(path + "side" + fps.ToString() +"_"+ sec.ToString() + ".png");
+            } 
+            if (fps == 30)
+            {
+                    fps = 1;
+                    sec++; 
             } 
 
+                DepthImageK1.Source = imagetoWriteablebitmap(imagenKinectGray1);
+                DepthImageK2.Source = imagetoWriteablebitmap(imagenKinectGray2); 
+            //} 
+            fps++;
         }
         //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -135,11 +171,18 @@ namespace SystemV1
         //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
+        //:::::::::::::::Metodo para escribir cuantos frames con las manos detecta:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        //private void WriteTxt()
+        //{ 
+            
+        //}
+
 
         //:::::::::::::::Stop the kinect stream::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         private void Window_Unloaded(object sender, RoutedEventArgs e)
         {
             GettingKinectData.StopKinect();
+            file.Close(); 
         }
         //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

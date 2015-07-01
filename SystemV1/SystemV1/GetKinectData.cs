@@ -83,7 +83,6 @@ namespace SystemV1
             if (this.Kinect != null)
             {
                 this.DepthStream = this.Kinect.DepthStream;
-                //this.DepthValoresStream = new short[DepthStream.FramePixelDataLength];
                 this.DepthPixels = new DepthImagePixel[DepthStream.FramePixelDataLength];
                 this.DepthImagenPixeles = new byte[DepthStream.FramePixelDataLength * 4];
                 this.depthFrameKinect = new Image<Gray, Byte>(DepthStream.FrameWidth, DepthStream.FrameHeight);
@@ -124,7 +123,7 @@ namespace SystemV1
             }
 
             depthFrameKinect = depthFrameKinectBGR.Convert<Gray, Byte>();
-            depthFrameKinect = removeNoise(depthFrameKinect, 11);
+            depthFrameKinect = removeNoise(depthFrameKinect, 13);
 
             return depthFrameKinect;
         }//fin PollDepth() 

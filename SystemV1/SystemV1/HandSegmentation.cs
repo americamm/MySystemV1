@@ -23,7 +23,8 @@ namespace SystemV1
 
 
         //:::::::::::::Method for make the image binary::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        //the binarization is inspired in NiBlanck banarization, but in this case, we use just the average of the image
+        //the binarization is inspired in NiBlanck banarization, but in this case, we use just the average of the image. 
+        //openinOperation() remove the noise of the binarized image, using morphological operation, we use opening. 
 
         private Image<Gray, Byte> binaryThresholdNiBlack(Image<Gray, Byte> handImage)
         {
@@ -32,19 +33,35 @@ namespace SystemV1
 
             handImage.AvgSdv(out media, out desest);
             handImage = handImage.ThresholdBinary(media, new Gray(255));
+            handImage = openingOperation(handImage);  
 
             return handImage;
-        }
+        }//end BinaryThresholdNiBlack  
+
         
+        private Image<Gray, Byte> openingOperation(Image<Gray, Byte> binaryFrame)
+        {
+            StructuringElementEx SElement;
+
+            SElement = new StructuringElementEx(7, 7, 1, 1, Emgu.CV.CvEnum.CV_ELEMENT_SHAPE.CV_SHAPE_RECT);
+
+            binaryFrame._MorphologyEx(SElement, Emgu.CV.CvEnum.CV_MORPH_OP.CV_MOP_OPEN, 1);
+
+            return binaryFrame; 
+        } //end openingOperation()
+        
+
         //::::::::::::Method to calculate the convex hull:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        public Image<Gray, Byte> HandConvexHull(Image<Gray, Byte> frame, Rectangle Roi)
+        public PointF HandConvexHull(Image<Gray, Byte> frame, Rectangle Roi)
         {
+            //List<object> ListReturn = new List<object>(2); 
             Image<Gray, Byte> BinaryImage;
+            PointF centerPalm; 
 
             BinaryImage = frame.Copy(Roi); 
-            BinaryImage = binaryThresholdNiBlack(frame);
-
+            BinaryImage = binaryThresholdNiBlack(BinaryImage);
+            
 
             using (MemStorage storage = new MemStorage())
             {
@@ -78,11 +95,53 @@ namespace SystemV1
                     points = box.GetVertices();
                 }
 
-                BinaryImage.Draw(Hull, new Gray(155), 3);
+                //BinaryImage.Draw(Hull, new Gray(155), 3);
             }
 
-            return BinaryImage;
-        }//end HandConvexHull
+            centerPalm = GetFingers(BinaryImage);
+
+            //ListReturn.Add(centerPalm);
+
+            return centerPalm;
+        }//end HandConvexHull  
+
+
+        private PointF GetFingers(Image<Gray, Byte> HandSegmentation) 
+        {
+            int fingerNum = 0;
+            PointF[] PointsMakeOalmCircle = new PointF[defectsArray.Length];
+            PointF[] PositionFingerTips = new PointF[5]; 
+
+            for (int i = 0; i < defects.Total; i++)
+            {
+                PointF startPoint = new PointF((float)defectsArray[i].StartPoint.X, (float)defectsArray[i].StartPoint.Y);
+                PointF depthPoint = new PointF((float)defectsArray[i].DepthPoint.X, (float)defectsArray[i].DepthPoint.Y);
+                PointF endPoint = new PointF((float)defectsArray[i].EndPoint.X, (float)defectsArray[i].EndPoint.Y);
+
+                //LineSegment2D startDepthLine = new LineSegment2D(defectsArray[i].StartPoint, defectsArray[i].DepthPoint);
+                //LineSegment2D depthEndLine = new LineSegment2D(defectsArray[i].DepthPoint, defectsArray[i].EndPoint);
+
+                CircleF startCircle = new CircleF(startPoint, 5f);
+                CircleF depthCircle = new CircleF(depthPoint, 5f);
+                CircleF endCircle = new CircleF(endPoint, 5f);
+
+                PointsMakeOalmCircle[i] = depthPoint;
+
+                //Custom heuristic based on some experiment, double check it before use
+                if ((startCircle.Center.Y < box.center.Y || depthCircle.Center.Y < box.center.Y) && (startCircle.Center.Y < depthCircle.Center.Y) && (Math.Sqrt(Math.Pow(startCircle.Center.X - depthCircle.Center.X, 2) + Math.Pow(startCircle.Center.Y - depthCircle.Center.Y, 2)) > box.size.Height / 6.5))
+                {
+                    fingerNum++; //Number of the fingers
+                    PositionFingerTips[fingerNum - 1] = startPoint; 
+                }
+            }
+
+            CircleF circulito = Emgu.CV.PointCollection.MinEnclosingCircle(PointsMakeOalmCircle); //Circle, represent the palm of the hand
+            PointF centro = circulito.Center;  //center of the hand, there is the center of the circur
+
+            return centro;
+        }//end get fingers  
+
+        //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     }//end class
 }//end namespace
